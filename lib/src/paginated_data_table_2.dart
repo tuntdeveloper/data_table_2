@@ -215,10 +215,11 @@ class PaginatedDataTable2 extends StatefulWidget {
     this.headingRowDecoration,
     this.isVerticalScrollBarVisible,
     this.isHorizontalScrollBarVisible,
+    this.footerBuilder,
   })  : assert(actions == null || (header != null)),
         assert(columns.isNotEmpty),
-        assert(sortColumnIndex == null ||
-            (sortColumnIndex >= 0 && sortColumnIndex < columns.length)),
+        assert(
+            sortColumnIndex == null || (sortColumnIndex >= 0 && sortColumnIndex < columns.length)),
         assert(rowsPerPage > 0),
         assert(() {
           if (onRowsPerPageChanged != null && autoRowsToHeight == false) {
@@ -226,6 +227,16 @@ class PaginatedDataTable2 extends StatefulWidget {
           }
           return true;
         }());
+
+  final Widget Function(
+    bool canForward,
+    Function()? onForward,
+    bool canBackward,
+    Function()? onBackward,
+    int currentPage,
+    int maxPage,
+    Function(int)? onChangePage,
+  )? footerBuilder;
 
   final bool wrapInCard;
 
@@ -539,8 +550,7 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
     // Doing that in the current call somehow messes with update
     // lifecycle when using async table
     if (widget.controller != null) {
-      Future.delayed(const Duration(milliseconds: 0),
-          () => widget.controller?._notifyListeners());
+      Future.delayed(const Duration(milliseconds: 0), () => widget.controller?._notifyListeners());
     }
     //widget.controller?._notifyListeners();
     super.setState(fn);
@@ -549,9 +559,8 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
   @override
   void initState() {
     super.initState();
-    _firstRowIndex = PageStorage.of(context).readState(context) as int? ??
-        widget.initialFirstRowIndex ??
-        0;
+    _firstRowIndex =
+        PageStorage.of(context).readState(context) as int? ?? widget.initialFirstRowIndex ?? 0;
     widget.source.addListener(_handleDataSourceChanged);
     _effectiveRowsPerPage = widget.rowsPerPage;
     widget.controller?._attach(this);
@@ -604,8 +613,7 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
           ? _alignRowIndex(rowIndex, _effectiveRowsPerPage)
           : math.max(math.min(_rowCount - 1, rowIndex), 0);
     });
-    if ((widget.onPageChanged != null) &&
-        (oldFirstRowIndex != _firstRowIndex)) {
+    if ((widget.onPageChanged != null) && (oldFirstRowIndex != _firstRowIndex)) {
       widget.onPageChanged!(_firstRowIndex);
     }
   }
@@ -613,16 +621,13 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
   DataRow _getBlankRowFor(int index) {
     return DataRow.byIndex(
       index: index,
-      cells: widget.columns
-          .map<DataCell>((DataColumn column) => DataCell.empty)
-          .toList(),
+      cells: widget.columns.map<DataCell>((DataColumn column) => DataCell.empty).toList(),
     );
   }
 
   DataRow _getProgressIndicatorRowFor(int index) {
     bool haveProgressIndicator = false;
-    final List<DataCell> cells =
-        widget.columns.map<DataCell>((DataColumn column) {
+    final List<DataCell> cells = widget.columns.map<DataCell>((DataColumn column) {
       if (!column.numeric) {
         haveProgressIndicator = true;
         return const DataCell(CircularProgressIndicator());
@@ -688,19 +693,16 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
   }
 
   void _handleLast() {
-    pageTo(((_rowCount - 1) / _effectiveRowsPerPage).floor() *
-        _effectiveRowsPerPage);
+    pageTo(((_rowCount - 1) / _effectiveRowsPerPage).floor() * _effectiveRowsPerPage);
   }
 
   bool _isNextPageUnavailable() =>
-      !_rowCountApproximate &&
-      (_firstRowIndex + _effectiveRowsPerPage >= _rowCount);
+      !_rowCountApproximate && (_firstRowIndex + _effectiveRowsPerPage >= _rowCount);
 
   final GlobalKey _tableKey = GlobalKey();
 
   Widget _getHeader() {
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
     final ThemeData themeData = Theme.of(context);
     double startPadding = widget.horizontalMargin;
     final List<Widget> headerWidgets = <Widget>[];
@@ -737,19 +739,15 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
         // list and then tweak them appropriately.
         // See https://material.io/design/components/data-tables.html#tables-within-cards
         style: _selectedRowCount > 0
-            ? themeData.textTheme.titleMedium!
-                .copyWith(color: themeData.colorScheme.secondary)
-            : themeData.textTheme.titleLarge!
-                .copyWith(fontWeight: FontWeight.w400),
+            ? themeData.textTheme.titleMedium!.copyWith(color: themeData.colorScheme.secondary)
+            : themeData.textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w400),
         child: IconTheme.merge(
           data: const IconThemeData(opacity: 0.54),
           child: Ink(
             height: 64.0,
-            color:
-                _selectedRowCount > 0 ? themeData.secondaryHeaderColor : null,
+            color: _selectedRowCount > 0 ? themeData.secondaryHeaderColor : null,
             child: Padding(
-              padding:
-                  EdgeInsetsDirectional.only(start: startPadding, end: 14.0),
+              padding: EdgeInsetsDirectional.only(start: startPadding, end: 14.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: headerWidgets,
@@ -813,16 +811,14 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
   }
 
   Widget _getFooter() {
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
     final ThemeData themeData = Theme.of(context);
     final TextStyle? footerTextStyle = themeData.textTheme.bodySmall;
     final List<Widget> footerWidgets = <Widget>[];
 
     if (widget.onRowsPerPageChanged != null) {
       final List<Widget> availableRowsPerPage = widget.availableRowsPerPage
-          .where((int value) =>
-              value <= _rowCount || value == _effectiveRowsPerPage)
+          .where((int value) => value <= _rowCount || value == _effectiveRowsPerPage)
           .map<DropdownMenuItem<int>>((int value) {
         return DropdownMenuItem<int>(
           value: value,
@@ -835,8 +831,8 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
           // to match trailing padding in case we overflow and end up scrolling
           Text(localizations.rowsPerPageTitle),
           ConstrainedBox(
-            constraints: const BoxConstraints(
-                minWidth: 64.0), // 40.0 for the text, 24.0 for the icon
+            constraints:
+                const BoxConstraints(minWidth: 64.0), // 40.0 for the text, 24.0 for the icon
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
               child: DropdownButtonHideUnderline(
@@ -905,6 +901,27 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
       Container(width: 14.0),
     ]);
 
+    if (widget.footerBuilder != null) {
+      return SingleChildScrollView(
+        dragStartBehavior: widget.dragStartBehavior,
+        scrollDirection: Axis.horizontal,
+        reverse: true,
+        child: Row(
+          children: [
+            widget.footerBuilder!.call(
+              _isNextPageUnavailable(),
+              _isNextPageUnavailable() ? null : _handleNext,
+              _firstRowIndex - _effectiveRowsPerPage > 0,
+              _firstRowIndex <= 0 ? null : _handlePrevious,
+              _firstRowIndex + _effectiveRowsPerPage,
+              _rowCount,
+              pageTo,
+            ),
+          ],
+        ),
+      );
+    }
+
     return DefaultTextStyle(
       style: footerTextStyle!,
       child: IconTheme.merge(
@@ -953,8 +970,7 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
                           8 * (widget.wrapInCard ? 1 : 0) // card paddings
                           -
                           64 * (isHeaderPresent ? 1 : 0) //header
-                          -
-                          56 * (widget.hidePaginator ? 0 : 1) // footer
+                      // footer
                       ) /
                       widget.dataRowHeight)
                   .floor(),
@@ -980,13 +996,22 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
           children: <Widget>[
             if (isHeaderPresent) _getHeader(),
             _getTable(constraints),
-            if (!widget.hidePaginator) _getFooter(),
           ],
         );
 
-        if (widget.wrapInCard) t = Card(semanticContainer: false, child: t);
+        if (widget.wrapInCard) {
+          t = Card(semanticContainer: false, child: t);
+        }
 
-        return t;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: Card(semanticContainer: false, color: Colors.white, child: t)),
+            SizedBox(height: 24),
+            if (!widget.hidePaginator) _getFooter(),
+          ],
+        );
       },
     );
   }
