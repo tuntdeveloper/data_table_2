@@ -216,6 +216,7 @@ class PaginatedDataTable2 extends StatefulWidget {
     this.isVerticalScrollBarVisible,
     this.isHorizontalScrollBarVisible,
     this.footerBuilder,
+    this.tableWidth,
   })  : assert(actions == null || (header != null)),
         assert(columns.isNotEmpty),
         assert(
@@ -237,6 +238,8 @@ class PaginatedDataTable2 extends StatefulWidget {
     int maxPage,
     Function(int)? onChangePage,
   )? footerBuilder;
+
+  final double? tableWidth;
 
   final bool wrapInCard;
 
@@ -902,23 +905,19 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
     ]);
 
     if (widget.footerBuilder != null) {
-      return SingleChildScrollView(
-        dragStartBehavior: widget.dragStartBehavior,
-        scrollDirection: Axis.horizontal,
-        reverse: true,
-        child: Row(
-          children: [
-            widget.footerBuilder!.call(
-              _isNextPageUnavailable(),
-              _isNextPageUnavailable() ? null : _handleNext,
-              _firstRowIndex - _effectiveRowsPerPage > 0,
-              _firstRowIndex <= 0 ? null : _handlePrevious,
-              _firstRowIndex + _effectiveRowsPerPage,
-              _rowCount,
-              pageTo,
-            ),
-          ],
-        ),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          widget.footerBuilder!.call(
+            _isNextPageUnavailable(),
+            _isNextPageUnavailable() ? null : _handleNext,
+            _firstRowIndex - _effectiveRowsPerPage > 0,
+            _firstRowIndex <= 0 ? null : _handlePrevious,
+            _firstRowIndex + _effectiveRowsPerPage,
+            _rowCount,
+            pageTo,
+          ),
+        ],
       );
     }
 
@@ -957,6 +956,8 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
       }
     }
   }
+
+  final _scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) {
@@ -1007,9 +1008,30 @@ class PaginatedDataTable2State extends State<PaginatedDataTable2> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: Card(semanticContainer: false, color: Colors.white, child: t)),
+            if (widget.tableWidth != null)
+              Expanded(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  controller: _scrollController,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                        width: widget.tableWidth,
+                        child: Card(semanticContainer: false, color: Colors.white, child: t)),
+                  ),
+                ),
+              )
+            else
+              Expanded(child: Card(semanticContainer: false, color: Colors.white, child: t)),
             SizedBox(height: 24),
-            if (!widget.hidePaginator) _getFooter(),
+            if (!widget.hidePaginator)
+              Row(
+                children: [
+                  const Spacer(),
+                  _getFooter(),
+                ],
+              ),
           ],
         );
       },
